@@ -19,6 +19,7 @@ public class LRUCache <K, V>{
     private final int capacity;
     private final Map<K, Node> map;
     private final Node head, tail;
+    private final Object lock = new Object();
 
     public LRUCache(int capacity) {
         if (capacity <= 0) {
@@ -33,24 +34,28 @@ public class LRUCache <K, V>{
     }
 
     public V get(K key) {
-        Node node = map.get(key);
-        if (node == null) return null;
-        moveToHead(node);
-        return node.value;
+        synchronized (lock) {
+            Node node = map.get(key);
+            if (node == null) return null;
+            moveToHead(node);
+            return node.value;
+        }
     }
 
     public void put(K key, V value) {
-        Node node = map.get(key);
-        if (node != null) {
-            node.value = value;
-            moveToHead(node);
-        } else {
-            Node newNode = new Node(key, value);
-            map.put(key, newNode);
-            addToHead(newNode);
-            if (map.size() > capacity) {
-                Node lru = popTail();
-                map.remove(lru.key);
+        synchronized (lock) {
+            Node node = map.get(key);
+            if (node != null) {
+                node.value = value;
+                moveToHead(node);
+            } else {
+                Node newNode = new Node(key, value);
+                map.put(key, newNode);
+                addToHead(newNode);
+                if (map.size() > capacity) {
+                    Node lru = popTail();
+                    map.remove(lru.key);
+                }
             }
         }
     }
@@ -78,30 +83,56 @@ public class LRUCache <K, V>{
         return last;
     }
 
-    private Node removeTail() {
-        Node last = tail.prev;
-        removeNode(last);
-        return last;
-    }
-
     public int size() {
-        return map.size();
+        synchronized (lock) {
+            return map.size();
+        }
     }
 
     public int getCapacity() {
         return capacity;
     }
 
+    /**
+     * Returns a snapshot of all key-value pairs.
+     * Used for data migration in distributed cache scenarios.
+     */
+    public Map<K, V> snapshot() {
+        synchronized (lock) {
+            Map<K, V> snapshot = new HashMap<>();
+            Node node = head.next;
+            while (node != tail) {
+                snapshot.put(node.key, node.value);
+                node = node.next;
+            }
+            return snapshot;
+        }
+    }
+
+    /**
+     * Removes and returns the value for the given key, or null if not present.
+     */
+    public V remove(K key) {
+        synchronized (lock) {
+            Node node = map.remove(key);
+            if (node == null) return null;
+            removeNode(node);
+            return node.value;
+        }
+    }
+
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("LRU[");
-        Node node = head.next;
-        while (node != tail) {
-            sb.append(node.key).append("=").append(node.value);
-            node = node.next;
-            if (node != tail) sb.append(" < ");
+        synchronized (lock) {
+            StringBuilder sb = new StringBuilder("LRU[");
+            Node node = head.next;
+            while (node != tail) {
+                sb.append(node.key).append("=").append(node.value);
+                node = node.next;
+                if (node != tail) sb.append(" < ");
+            }
+            sb.append("]");
+            return sb.toString();
         }
-        sb.append("]");
-        return sb.toString();
     }
 }

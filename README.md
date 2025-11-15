@@ -12,8 +12,8 @@ This repository contains:
 
 ## Prerequisites
 
-- Java 24
-- Maven (Maven wrapper included)
+- Java 25
+- Maven 3.9.11
 
 ## Getting Started
 
@@ -78,7 +78,6 @@ src/main/java/org/js/
 - JUnit 5 - Testing framework
 - AssertJ - Fluent assertions
 - Mockito - Mocking framework
-- Guava - Utility libraries
 
 ## Learning Resources
 

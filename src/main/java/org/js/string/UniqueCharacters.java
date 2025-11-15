@@ -51,7 +51,10 @@ public class UniqueCharacters {
     }
 
     public boolean uniqueChars(String str) {
-        if (str == null || str.isEmpty() || str.length() > 128) {
+        if (str == null || str.isEmpty()) {
+            throw new IllegalArgumentException("String cannot be null or empty");
+        }
+        if (str.length() > 128) {
             return false;
         }
 
